@@ -31,3 +31,6 @@ dist-ssr
 # Vinxi / TanStack Start
 .output
 .vinxi
+
+# Vercel build output (generated at build time)
+.vercel/output
