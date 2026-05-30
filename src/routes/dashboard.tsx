@@ -58,8 +58,9 @@ function DashboardPage() {
   }, [session, loading, navigate]);
 
   useEffect(() => {
-    if (profile && !profile.onboarded) navigate({ to: "/onboarding", replace: true });
-  }, [profile, navigate]);
+    // Hanya redirect jika profile sudah selesai dimuat DAN onboarded false
+    if (!loading && profile && !profile.onboarded) navigate({ to: "/onboarding", replace: true });
+  }, [profile, loading, navigate]);
 
   useEffect(() => {
     if (!session?.user) return;

@@ -43,14 +43,17 @@ function OnboardingPage() {
   const [daily, setDaily] = useState(30);
   const [pet, setPet] = useState("stage1");
   const [saving, setSaving] = useState(false);
+  // Flag lokal untuk mencegah redirect loop saat navigasi setelah submit
+  const [onboardingDone, setOnboardingDone] = useState(false);
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/login", replace: true });
   }, [session, loading, navigate]);
 
   useEffect(() => {
-    if (profile?.onboarded) navigate({ to: "/dashboard", replace: true });
-  }, [profile, navigate]);
+    // Jangan redirect jika onboarding baru saja selesai (flag lokal)
+    if (!onboardingDone && profile?.onboarded) navigate({ to: "/dashboard", replace: true });
+  }, [profile, navigate, onboardingDone]);
 
   const toggleInterest = (i: string) =>
     setInterests((prev) => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i]);
@@ -76,6 +79,8 @@ function OnboardingPage() {
       .eq("id", session.user.id);
     setSaving(false);
     if (error) return toast.error(error.message);
+    // Set flag sebelum navigate agar useEffect guard tidak memantul balik
+    setOnboardingDone(true);
     toast.success("Selamat datang! Pet kamu siap menemani 🎉");
     navigate({ to: "/dashboard", replace: true });
   };
