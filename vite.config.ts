@@ -22,27 +22,8 @@ export default defineConfig({
   },
   vite: {
     build: {
-      sourcemap: false, // Menonaktifkan sourcemap di production untuk mengurangi ukuran hasil build
+      sourcemap: false,
       minify: "esbuild",
-      rollupOptions: {
-        output: {
-          manualChunks(id) {
-            // Memisahkan dependencies (node_modules) menjadi file terpisah agar browser bisa melakukan cache lebih efisien
-            if (id.includes("node_modules")) {
-              if (id.includes("react") || id.includes("react-dom")) {
-                return "react-vendor";
-              }
-              if (id.includes("@tanstack")) {
-                return "tanstack-vendor";
-              }
-              if (id.includes("lucide-react")) {
-                return "icons-vendor";
-              }
-              return "vendor"; // Sisa library lainnya akan masuk ke chunk 'vendor'
-            }
-          },
-        },
-      },
     },
     esbuild: {
       // Secara otomatis menghapus semua console.log() dan debugger di environment production
