@@ -1,0 +1,27 @@
+export function getPetEvolution(totalXP: number) {
+  if (totalXP < 150) {
+    return {
+      currentStage: 1,
+      nextThreshold: 150,
+      progressPercentage: Math.min(100, Math.round((totalXP / 150) * 100)),
+      label: "Belajar terus untuk evolusi berikutnya.",
+      stageKey: "stage1"
+    };
+  } else if (totalXP < 500) {
+    return {
+      currentStage: 2,
+      nextThreshold: 500,
+      progressPercentage: Math.min(100, Math.round(((totalXP - 150) / 350) * 100)),
+      label: "Rekan belajarmu semakin pintar!",
+      stageKey: "stage2"
+    };
+  } else {
+    return {
+      currentStage: 3,
+      nextThreshold: 500,
+      progressPercentage: 100,
+      label: "Bentuk evolusi maksimal!",
+      stageKey: "stage3"
+    };
+  }
+}

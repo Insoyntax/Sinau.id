@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- Glow bg -->
+  <circle cx="100" cy="110" r="75" fill="url(#s1bg)" opacity="0.3"/>
+  <!-- Antenna -->
+  <line x1="100" y1="35" x2="100" y2="55" stroke="#6366f1" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="100" cy="30" r="7" fill="#818cf8"/>
+  <circle cx="100" cy="30" r="4" fill="white" opacity="0.7"/>
+  <!-- Head -->
+  <rect x="65" y="55" width="70" height="58" rx="14" fill="url(#s1head)"/>
+  <!-- Visor -->
+  <rect x="73" y="65" width="54" height="26" rx="8" fill="url(#s1visor)"/>
+  <!-- Eyes -->
+  <circle cx="89" cy="78" r="7" fill="#a5b4fc"/>
+  <circle cx="111" cy="78" r="7" fill="#a5b4fc"/>
+  <circle cx="90" cy="76" r="3" fill="white" opacity="0.9"/>
+  <circle cx="112" cy="76" r="3" fill="white" opacity="0.9"/>
+  <!-- Smile -->
+  <path d="M88 93 Q100 100 112 93" stroke="#6366f1" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <!-- Body -->
+  <rect x="72" y="115" width="56" height="44" rx="12" fill="url(#s1body)"/>
+  <!-- Chest LED -->
+  <circle cx="100" cy="132" r="5" fill="#6366f1"/>
+  <circle cx="100" cy="132" r="3" fill="#c7d2fe"/>
+  <!-- Arms -->
+  <rect x="38" y="118" width="30" height="14" rx="7" fill="url(#s1arm)"/>
+  <rect x="132" y="118" width="30" height="14" rx="7" fill="url(#s1arm)"/>
+  <!-- Propellers -->
+  <ellipse cx="38" cy="112" rx="22" ry="5" fill="#6366f1" opacity="0.4"/>
+  <ellipse cx="162" cy="112" rx="22" ry="5" fill="#6366f1" opacity="0.4"/>
+  <!-- Legs -->
+  <rect x="80" y="157" width="16" height="22" rx="6" fill="url(#s1leg)"/>
+  <rect x="104" y="157" width="16" height="22" rx="6" fill="url(#s1leg)"/>
+  <defs>
+    <radialGradient id="s1bg" cx="50%" cy="50%"><stop stop-color="#818cf8"/><stop offset="1" stop-color="#6366f1"/></radialGradient>
+    <linearGradient id="s1head" x1="65" y1="55" x2="135" y2="113" gradientUnits="userSpaceOnUse"><stop stop-color="#4338ca"/><stop offset="1" stop-color="#1e1b4b"/></linearGradient>
+    <linearGradient id="s1visor" x1="73" y1="65" x2="127" y2="91" gradientUnits="userSpaceOnUse"><stop stop-color="#6366f1" stop-opacity="0.9"/><stop offset="1" stop-color="#818cf8" stop-opacity="0.6"/></linearGradient>
+    <linearGradient id="s1body" x1="72" y1="115" x2="128" y2="159" gradientUnits="userSpaceOnUse"><stop stop-color="#3730a3"/><stop offset="1" stop-color="#312e81"/></linearGradient>
+    <linearGradient id="s1arm" x1="38" y1="118" x2="162" y2="132" gradientUnits="userSpaceOnUse"><stop stop-color="#4338ca"/><stop offset="1" stop-color="#3730a3"/></linearGradient>
+    <linearGradient id="s1leg" x1="80" y1="157" x2="120" y2="179" gradientUnits="userSpaceOnUse"><stop stop-color="#3730a3"/><stop offset="1" stop-color="#312e81"/></linearGradient>
+  </defs>
+</svg>
