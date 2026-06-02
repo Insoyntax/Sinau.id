@@ -1,16 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 
+// FIX BUG-KRITIS-02: Server functions now accept userId/data as validated parameters
+// instead of trying to call supabase.auth.getSession() in a server context (where
+// there is no browser cookie/localStorage, so it always returns null).
+// Security is enforced by Supabase Row-Level Security on the database side.
+
 export const getWeeklyActivityLogs = createServerFn({ method: "GET" })
-  .handler(async () => {
+  .validator((data: { userId: string }) => data)
+  .handler(async ({ data: { userId } }) => {
     try {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session?.user) {
-        return []; // Fail silently to empty array if unauthorized
-      }
-      
-      const userId = session.user.id;
+      if (!userId) return [];
+
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -25,7 +26,7 @@ export const getWeeklyActivityLogs = createServerFn({ method: "GET" })
         console.error("Supabase error fetching weekly logs:", error.message);
         return [];
       }
-      
+
       return logs || [];
     } catch (err) {
       console.error("Unexpected error in getWeeklyActivityLogs:", err);
@@ -33,17 +34,15 @@ export const getWeeklyActivityLogs = createServerFn({ method: "GET" })
     }
   });
 
+// FIX BUG-PENTING-05 (partial): Use validator for type-safe input — prevents NaN from
+// undefined xpToAdd being written to the database.
 export const evaluateUserStreak = createServerFn({ method: "POST" })
-  .handler(async (ctx: any) => {
-    const { xpToAdd } = ctx.data;
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError || !session?.user) {
-      throw new Error("Unauthorized");
-    }
-    
-    const userId = session.user.id;
-    
+  .validator((data: { userId: string; xpToAdd: number }) => data)
+  .handler(async ({ data: { userId, xpToAdd } }) => {
+    if (!userId) throw new Error("userId is required");
+
+    const safeXp = Number(xpToAdd) || 0;
+
     const { data: stats, error: statsError } = await supabase
       .from("user_stats")
       .select("*")
@@ -53,28 +52,29 @@ export const evaluateUserStreak = createServerFn({ method: "POST" })
     if (statsError || !stats) {
       const { data: newStats } = await supabase
         .from("user_stats")
-        .insert({ user_id: userId, current_streak: 1, total_xp: xpToAdd, last_active_date: new Date().toLocaleDateString("en-CA") })
-        .select().single();
+        .insert({
+          user_id: userId,
+          current_streak: 1,
+          total_xp: safeXp,
+          last_active_date: new Date().toLocaleDateString("en-CA"),
+        })
+        .select()
+        .single();
       return newStats;
     }
 
-    const todayDate = new Date();
-    const todayStr = todayDate.toLocaleDateString("en-CA");
+    const todayStr = new Date().toLocaleDateString("en-CA");
     const lastActiveStr = stats.last_active_date;
-    
+
     let newStreak = stats.current_streak;
-    const newXp = stats.total_xp + xpToAdd;
+    const newXp = stats.total_xp + safeXp;
 
     if (lastActiveStr !== todayStr) {
       const yesterdayDate = new Date();
       yesterdayDate.setDate(yesterdayDate.getDate() - 1);
       const yesterdayStr = yesterdayDate.toLocaleDateString("en-CA");
 
-      if (lastActiveStr === yesterdayStr) {
-        newStreak += 1;
-      } else {
-        newStreak = 1;
-      }
+      newStreak = lastActiveStr === yesterdayStr ? newStreak + 1 : 1;
     }
 
     const maxStreak = Math.max(stats.max_streak || 0, newStreak);
@@ -85,32 +85,27 @@ export const evaluateUserStreak = createServerFn({ method: "POST" })
         current_streak: newStreak,
         max_streak: maxStreak,
         last_active_date: todayStr,
-        total_xp: newXp
+        total_xp: newXp,
       })
       .eq("user_id", userId)
       .select()
       .single();
 
-    if (updateError) {
-      throw new Error(updateError.message);
-    }
+    if (updateError) throw new Error(updateError.message);
 
     return updatedStats;
   });
 
 export const getUserStats = createServerFn({ method: "GET" })
-  .handler(async () => {
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError || !session?.user) {
-      return null;
-    }
-    
+  .validator((data: { userId: string }) => data)
+  .handler(async ({ data: { userId } }) => {
+    if (!userId) return null;
+
     const { data: stats } = await supabase
       .from("user_stats")
       .select("current_streak, total_xp")
-      .eq("user_id", session.user.id)
+      .eq("user_id", userId)
       .single();
-      
+
     return stats || { current_streak: 0, total_xp: 0 };
   });

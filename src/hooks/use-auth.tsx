@@ -28,27 +28,47 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
 
+  // FIX BUG-KRITIS-01: Split loading into two states.
+  // `loading` is only false when BOTH session AND profile are resolved.
+  // This eliminates the race condition where loading=false but profile=null.
+  const [sessionLoading, setSessionLoading] = useState(true);
+  // Start true: covers the gap between session resolving and profile fetch completing.
+  const [profileLoading, setProfileLoading] = useState(true);
+
+  const loading = sessionLoading || profileLoading;
+
+  // Step 1: Resolve the session
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
-      if (!newSession) setProfile(null);
+      if (!newSession) {
+        setProfile(null);
+        setProfileLoading(false);
+      }
     });
 
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      setLoading(false);
+      setSessionLoading(false);
+      // If there is no session, no profile will ever be fetched.
+      if (!data.session) setProfileLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
+  // Step 2: Fetch profile only after session is known
   useEffect(() => {
-    if (!session?.user) return;
+    if (!session?.user) {
+      setProfileLoading(false);
+      return;
+    }
+    setProfileLoading(true);
     const uid = session.user.id;
     supabase.from("profiles").select("*").eq("id", uid).maybeSingle().then(({ data }) => {
       if (data) setProfile(data as Profile);
+      setProfileLoading(false);
     });
   }, [session?.user?.id]);
 

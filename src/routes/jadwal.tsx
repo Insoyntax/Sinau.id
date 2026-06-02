@@ -5,6 +5,13 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { AppHeader } from "@/components/app/AppHeader";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/jadwal")({
   head: () => ({ meta: [{ title: "Jadwal — Sinau.id" }] }),
@@ -24,26 +31,51 @@ function JadwalPage() {
 
   useEffect(() => {
     if (!session?.user) return;
-    supabase.from("schedule_blocks").select("*").then(({ data, error }) => {
+    supabase.from("schedule_blocks").select("*").eq("user_id", session.user.id).then(({ data, error }) => {
       if (error) toast.error(error.message);
       else setBlocks((data ?? []) as Block[]);
       setLoadingBlocks(false);
     });
   }, [session?.user?.id]);
 
-  const addBlock = async (day: number, hour: number) => {
-    if (!session?.user) return;
-    const title = window.prompt("Judul blok belajar:");
-    if (!title?.trim()) return;
-    const spanStr = window.prompt("Durasi (jam, 1-6):", "1");
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<{ day: number; hour: number } | null>(null);
+  const [adding, setAdding] = useState(false);
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [blockToDelete, setBlockToDelete] = useState<Block | null>(null);
+
+  const handleCellClick = (day: number, hour: number) => {
+    if (isOccupied(day, hour)) return;
+    setSelectedSlot({ day, hour });
+    setAddDialogOpen(true);
+  };
+
+  const onAddSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!session?.user || !selectedSlot) return;
+    
+    const fd = new FormData(e.currentTarget);
+    const title = String(fd.get("title") ?? "").trim();
+    const spanStr = String(fd.get("span") ?? "1");
+    if (!title) return;
+    
+    setAdding(true);
     const span = Math.max(1, Math.min(6, Number(spanStr) || 1));
     const { data, error } = await supabase
       .from("schedule_blocks")
-      .insert({ user_id: session.user.id, day_of_week: day, start_hour: hour, span_hours: span, title: title.trim() })
+      .insert({ user_id: session.user.id, day_of_week: selectedSlot.day, start_hour: selectedSlot.hour, span_hours: span, title })
       .select()
       .single();
-    if (error) return toast.error(error.message);
+    
+    setAdding(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    
     setBlocks((b) => [...b, data as Block]);
+    setAddDialogOpen(false);
   };
 
   const deleteBlock = async (id: string) => {
@@ -92,7 +124,7 @@ function JadwalPage() {
                     {DAYS.map((_, d) => (
                       <button
                         key={`${d}-${h}`}
-                        onClick={() => !isOccupied(d, h) && addBlock(d, h)}
+                        onClick={() => handleCellClick(d, h)}
                         className={`border border-border/40 rounded transition ${
                           isOccupied(d, h) ? "cursor-default" : "hover:bg-primary/10 hover:border-primary/40"
                         }`}
@@ -115,7 +147,8 @@ function JadwalPage() {
                     <button
                       key={b.id}
                       onClick={() => {
-                        if (confirm(`Hapus "${b.title}"?`)) deleteBlock(b.id);
+                        setBlockToDelete(b);
+                        setDeleteDialogOpen(true);
                       }}
                       className="absolute rounded-lg bg-gradient-to-br from-primary to-violet text-primary-foreground text-xs font-medium px-2 py-1 text-left shadow-glow hover:scale-[1.02] transition"
                       style={{ left, width, top, height }}
@@ -133,6 +166,84 @@ function JadwalPage() {
           </div>
         )}
       </main>
+
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+        <DialogContent className="bg-zinc-950/95 backdrop-blur-xl border-border/40 sm:max-w-md shadow-2xl rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Buat Blok Belajar</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={onAddSubmit} className="space-y-6 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Judul Blok</label>
+              <input 
+                name="title"
+                required
+                placeholder="Contoh: Matematika Diskret"
+                className="w-full rounded-xl border border-border/50 bg-zinc-900/50 px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition text-foreground placeholder:text-muted-foreground/50"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Durasi (jam)</label>
+              <input 
+                name="span"
+                type="number"
+                min="1"
+                max="6"
+                defaultValue="1"
+                required
+                className="w-full rounded-xl border border-border/50 bg-zinc-900/50 px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition text-foreground"
+              />
+            </div>
+            <DialogFooter>
+              <button 
+                type="button"
+                onClick={() => setAddDialogOpen(false)}
+                className="rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-muted transition"
+              >
+                Batal
+              </button>
+              <button 
+                type="submit"
+                disabled={adding}
+                className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-glow hover:opacity-90 transition-all disabled:opacity-50 inline-flex items-center gap-2"
+              >
+                {adding && <Loader2 className="size-4 animate-spin" />}
+                Simpan
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="bg-zinc-950/95 backdrop-blur-xl border-border/40 sm:max-w-md shadow-2xl rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Hapus Jadwal?</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground">
+              Apakah kamu yakin ingin menghapus blok belajar <strong className="text-foreground">{blockToDelete?.title}</strong>? Tindakan ini tidak dapat dibatalkan.
+            </p>
+          </div>
+          <DialogFooter>
+            <button 
+              onClick={() => setDeleteDialogOpen(false)}
+              className="rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-muted transition"
+            >
+              Batal
+            </button>
+            <button 
+              onClick={() => {
+                if (blockToDelete) deleteBlock(blockToDelete.id);
+                setDeleteDialogOpen(false);
+              }}
+              className="rounded-xl bg-destructive px-4 py-3 text-sm font-semibold text-destructive-foreground hover:opacity-90 transition-all"
+            >
+              Hapus
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

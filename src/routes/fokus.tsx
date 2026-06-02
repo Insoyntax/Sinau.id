@@ -48,6 +48,10 @@ function FokusPage() {
   const [tempTaskId, setTempTaskId] = useState(selectedTaskId || "");
   
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  
+  // Fix BUG-PENTING-04: Use ref to avoid stale closure in setInterval
+  const onCompleteRef = useRef<() => Promise<void>>();
+
 
   useEffect(() => {
     if (session?.user) {
@@ -62,6 +66,18 @@ function FokusPage() {
   }, [duration, running, setRemaining]);
 
   useEffect(() => {
+    onCompleteRef.current = onComplete;
+  });
+
+  // Handle YouTube Play/Pause via playerRef (Fix BUG-PENTING-09)
+  useEffect(() => {
+    if (playerRef.current) {
+      if (running) playerRef.current.playVideo();
+      else playerRef.current.pauseVideo();
+    }
+  }, [running]);
+
+  useEffect(() => {
     if (!running) {
       if (intervalRef.current) clearInterval(intervalRef.current);
       return;
@@ -71,7 +87,7 @@ function FokusPage() {
         if (r <= 1) {
           clearInterval(intervalRef.current!);
           setRunning(false);
-          onComplete();
+          if (onCompleteRef.current) onCompleteRef.current();
           return 0;
         }
         return r - 1;
@@ -159,7 +175,7 @@ function FokusPage() {
     return (match && match[2].length === 11) ? match[2] : null;
   };
   
-  const videoId = running ? getYoutubeVideoId(youtubeUrl) : null;
+  const videoId = getYoutubeVideoId(youtubeUrl);
 
   return (
     <div className="min-h-screen bg-background transition-all duration-700">
@@ -170,7 +186,7 @@ function FokusPage() {
             videoId={videoId}
             opts={{
               playerVars: {
-                autoplay: 1,
+                autoplay: running ? 1 : 0,
                 controls: 0,
                 loop: 1,
                 playlist: videoId

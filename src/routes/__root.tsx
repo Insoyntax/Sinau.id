@@ -111,12 +111,34 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  // FIX UI-KRITIS-03: Inline script runs synchronously BEFORE React hydrates,
+  // reading localStorage and setting the .dark class on <html>.
+  // This prevents the Flash Of Unstyled Content (FOUC) on Vercel SSR.
+  const themeScript = `
+    (function() {
+      try {
+        var stored = localStorage.getItem('sinau-theme');
+        var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var isDark = stored === 'dark' || (!stored && prefersDark) || stored === null;
+        if (isDark) document.documentElement.classList.add('dark');
+      } catch (e) {}
+    })()
+  `;
   return (
     <html lang="id">
       <head>
         <HeadContent />
+        {/* Blocking theme script — must be in <head> to prevent FOUC */}
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
+        {/* FIX UI-DEBT-17: Skip-to-main-content for keyboard & screen reader accessibility (WCAG 2.4.1) */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground"
+        >
+          Langsung ke konten utama
+        </a>
         {children}
         <Scripts />
       </body>

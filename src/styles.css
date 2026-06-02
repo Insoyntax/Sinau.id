@@ -166,7 +166,12 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-.animate-float { animation: float 7s ease-in-out infinite; }
-.animate-pulse-glow { animation: pulse-glow 3.2s ease-in-out infinite; }
-.animate-timeline { animation: timeline-sweep 8s ease-in-out infinite alternate; }
+/* FIX UI-PENTING-05: All infinite-loop animations respect prefers-reduced-motion.
+   One-shot reveals (fade-up) are preserved as they don't cause vestibular issues. */
+@media (prefers-reduced-motion: no-preference) {
+  .animate-float { animation: float 7s ease-in-out infinite; }
+  .animate-pulse-glow { animation: pulse-glow 3.2s ease-in-out infinite; }
+  .animate-timeline { animation: timeline-sweep 8s ease-in-out infinite alternate; }
+}
+
 .animate-fade-up { animation: fade-up 0.7s ease-out both; }

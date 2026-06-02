@@ -40,7 +40,7 @@ function SignupPage() {
     }
     setLoading(true);
     const { email, password, ...meta } = parsed.data;
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -53,8 +53,14 @@ function SignupPage() {
       toast.error(error.message);
       return;
     }
-    toast.success("Akun berhasil dibuat! Selamat memulai petualangan.");
-    navigate({ to: "/onboarding", replace: true });
+    
+    if (!data.session) {
+      toast.success("Akun terdaftar! Silakan cek email kamu untuk verifikasi.");
+      // Do not navigate; user must verify email first.
+    } else {
+      toast.success("Akun berhasil dibuat! Selamat memulai petualangan.");
+      navigate({ to: "/onboarding", replace: true });
+    }
   };
 
   return (

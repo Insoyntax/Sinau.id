@@ -113,13 +113,13 @@ export function Hero() {
 
           <div className="mt-10 grid grid-cols-3 gap-4 max-w-md">
             {[
-              { k: "12k+", v: "Pelajar aktif" },
-              { k: "94%", v: "Tetap konsisten" },
-              { k: "4.9", v: "Rating pengguna" },
+              { k: "Fokus", v: "Sesi Anti-Distraksi" },
+              { k: "Kanban", v: "Manajemen Tugas" },
+              { k: "RPG", v: "Evolusi Pet & XP" },
             ].map((s) => (
-              <div key={s.v} className="glass rounded-xl p-3">
-                <div className="font-mono text-xl text-gradient">{s.k}</div>
-                <div className="text-xs text-muted-foreground mt-1">{s.v}</div>
+              <div key={s.v} className="glass rounded-xl p-3 text-center md:text-left">
+                <div className="font-mono text-lg font-semibold text-foreground/90">{s.k}</div>
+                <div className="text-[11px] text-muted-foreground mt-1 uppercase tracking-wider">{s.v}</div>
               </div>
             ))}
           </div>

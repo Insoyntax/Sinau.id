@@ -1,11 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent, type DragEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Loader2, Plus, Trash2, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { AppHeader } from "@/components/app/AppHeader";
 import { logUserActivity } from "@/lib/activity-logger";
+
+import {
+  DndContext,
+  DragOverlay,
+  closestCorners,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  useDraggable,
+  useDroppable,
+  type DragStartEvent,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 
 export const Route = createFileRoute("/tugas")({
   head: () => ({ meta: [{ title: "Tugas — Sinau.id" }] }),
@@ -22,12 +37,93 @@ const COLUMNS: { id: Status; label: string; tone: string }[] = [
   { id: "selesai", label: "Selesai", tone: "bg-emerald-400" },
 ];
 
+function DraggableTask({ task, onDelete }: { task: Task; onDelete: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: task.id,
+    data: task,
+  });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.3 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`group rounded-xl border border-border bg-card p-3 cursor-grab hover:border-primary/60 transition touch-none ${
+        isDragging ? "shadow-lg scale-105" : ""
+      }`}
+    >
+      <div className="flex items-start gap-2">
+        <GripVertical className="size-4 text-muted-foreground mt-0.5 opacity-50 group-hover:opacity-100" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{task.title}</p>
+          <div className="flex items-center gap-2 mt-1.5">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent text-accent-foreground">{task.subject}</span>
+            <span className="text-[10px] text-primary font-mono">+{task.xp} XP</span>
+          </div>
+        </div>
+        <button
+          onPointerDown={(e) => {
+            // Prevent drag from starting when clicking delete button
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition"
+        >
+          <Trash2 className="size-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DroppableColumn({ id, title, tone, tasks, onDelete }: { id: string; title: string; tone: string; tasks: Task[]; onDelete: (id: string) => void }) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`glass rounded-2xl p-4 min-h-[300px] shadow-card transition-colors ${
+        isOver ? "bg-primary/5 ring-1 ring-primary/40" : ""
+      }`}
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <span className={`size-2.5 rounded-full ${tone}`} />
+        <p className="font-medium text-sm">{title}</p>
+        <span className="ml-auto text-xs text-muted-foreground">{tasks.length}</span>
+      </div>
+      <div className="space-y-2">
+        {tasks.map((t) => (
+          <DraggableTask key={t.id} task={t} onDelete={() => onDelete(t.id)} />
+        ))}
+        {tasks.length === 0 && (
+          <p className="text-xs text-muted-foreground text-center py-6">Kosong — drop di sini</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function TugasPage() {
   const { session, profile, loading } = useRequireAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [dragId, setDragId] = useState<string | null>(null);
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5, // allows clicking inside draggable without triggering drag
+      },
+    }),
+    useSensor(KeyboardSensor)
+  );
 
   useEffect(() => {
     if (!session?.user) return;
@@ -74,7 +170,7 @@ function TugasPage() {
       const task = prev.find((x) => x.id === id);
       if (task) {
         toast.success(`Tugas selesai! +${task.xp} XP`);
-        logUserActivity("task_completed", { task_id: task.id, subject: task.subject, title: task.title, xp: task.xp });
+        logUserActivity("task_completed", { task_id: task.id, subject: task.subject, title: task.title, xp: task.xp }, session!.user.id);
       }
     }
   };
@@ -89,14 +185,22 @@ function TugasPage() {
     }
   };
 
-  const onDragStart = (e: DragEvent<HTMLDivElement>, id: string) => {
-    setDragId(id);
-    e.dataTransfer.effectAllowed = "move";
+  const handleDragStart = (event: DragStartEvent) => {
+    const task = tasks.find((t) => t.id === event.active.id);
+    if (task) setActiveTask(task);
   };
-  const onDragOver = (e: DragEvent<HTMLDivElement>) => e.preventDefault();
-  const onDrop = (status: Status) => {
-    if (dragId) moveTask(dragId, status);
-    setDragId(null);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveTask(null);
+    if (!over) return;
+
+    const taskId = active.id as string;
+    const newStatus = over.id as Status;
+    const task = tasks.find((t) => t.id === taskId);
+    if (task && task.status !== newStatus) {
+      moveTask(taskId, newStatus);
+    }
   };
 
   if (loading || !profile) {
@@ -124,52 +228,42 @@ function TugasPage() {
         {loadingTasks ? (
           <div className="py-12 grid place-items-center"><Loader2 className="size-6 animate-spin text-primary" /></div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {COLUMNS.map((col) => {
-              const items = tasks.filter((t) => t.status === col.id);
-              return (
-                <div
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {COLUMNS.map((col) => (
+                <DroppableColumn
                   key={col.id}
-                  onDragOver={onDragOver}
-                  onDrop={() => onDrop(col.id)}
-                  className="glass rounded-2xl p-4 min-h-[300px] shadow-card"
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className={`size-2.5 rounded-full ${col.tone}`} />
-                    <p className="font-medium text-sm">{col.label}</p>
-                    <span className="ml-auto text-xs text-muted-foreground">{items.length}</span>
-                  </div>
-                  <div className="space-y-2">
-                    {items.map((t) => (
-                      <div
-                        key={t.id}
-                        draggable
-                        onDragStart={(e) => onDragStart(e, t.id)}
-                        className="group rounded-xl border border-border bg-card p-3 cursor-grab active:cursor-grabbing hover:border-primary/60 transition"
-                      >
-                        <div className="flex items-start gap-2">
-                          <GripVertical className="size-4 text-muted-foreground mt-0.5 opacity-50 group-hover:opacity-100" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{t.title}</p>
-                            <div className="flex items-center gap-2 mt-1.5">
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent text-accent-foreground">{t.subject}</span>
-                              <span className="text-[10px] text-primary font-mono">+{t.xp} XP</span>
-                            </div>
-                          </div>
-                          <button onClick={() => deleteTask(t.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition">
-                            <Trash2 className="size-3.5" />
-                          </button>
-                        </div>
+                  id={col.id}
+                  title={col.label}
+                  tone={col.tone}
+                  tasks={tasks.filter((t) => t.status === col.id)}
+                  onDelete={deleteTask}
+                />
+              ))}
+            </div>
+
+            <DragOverlay>
+              {activeTask ? (
+                <div className="rounded-xl border border-primary bg-card p-3 shadow-2xl scale-105 rotate-2 cursor-grabbing opacity-90">
+                  <div className="flex items-start gap-2">
+                    <GripVertical className="size-4 text-primary mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{activeTask.title}</p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent text-accent-foreground">{activeTask.subject}</span>
+                        <span className="text-[10px] text-primary font-mono">+{activeTask.xp} XP</span>
                       </div>
-                    ))}
-                    {items.length === 0 && (
-                      <p className="text-xs text-muted-foreground text-center py-6">Kosong — drop di sini</p>
-                    )}
+                    </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         )}
       </main>
     </div>
