@@ -118,6 +118,11 @@
     -webkit-font-smoothing: antialiased;
   }
   .font-mono { font-family: var(--font-mono); }
+
+  /* Fix: section headings hidden behind sticky navbar when navigating via anchor */
+  section[id] {
+    scroll-margin-top: 5rem;
+  }
 }
 
 @layer utilities {

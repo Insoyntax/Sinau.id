@@ -58,8 +58,10 @@ function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen grid place-items-center px-4 py-12 bg-background">
-      <div className="w-full max-w-md glass rounded-2xl p-8 shadow-card">
+    <div className="min-h-screen grid place-items-center px-4 py-12 bg-background relative overflow-hidden">
+      {/* Aurora brand background — consistent with landing page */}
+      <div className="absolute inset-0 bg-aurora opacity-50 pointer-events-none" />
+      <div className="relative w-full max-w-md glass rounded-2xl p-8 shadow-card">
         <Link to="/" className="flex items-center gap-2 mb-6">
           <div className="size-9 rounded-lg bg-gradient-to-br from-primary to-violet grid place-items-center shadow-glow">
             <Sparkles className="size-4 text-primary-foreground" />

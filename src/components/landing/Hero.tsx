@@ -77,7 +77,7 @@ function DroneAvatar({ className = "" }: { className?: string }) {
 
 export function Hero() {
   return (
-    <section className="relative pt-32 pb-20 overflow-hidden">
+    <section className="relative pt-32 pb-20 overflow-hidden" style={{ isolation: 'isolate' }}>
       <div className="absolute inset-0 bg-aurora opacity-70 pointer-events-none" />
       <div className="absolute inset-0 grid-bg opacity-40 pointer-events-none [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)]" />
 
@@ -125,7 +125,7 @@ export function Hero() {
           </div>
         </div>
 
-        <div className="relative h-[460px] lg:h-[560px]">
+        <div className="relative h-[460px] lg:h-[560px] overflow-hidden">
           {/* orbits */}
           <div className="absolute inset-0 grid place-items-center">
             <div className="size-[340px] md:size-[420px] rounded-full border border-primary/20" />
@@ -142,13 +142,13 @@ export function Hero() {
           </div>
 
           {/* floating chips */}
-          <div className="absolute top-8 right-4 glass rounded-xl px-3 py-2 text-xs animate-float [animation-delay:-2s]">
+          <div className="absolute top-8 right-4 glass rounded-xl px-3 py-2 text-xs animate-float [animation-delay:-2s] z-10">
             <div className="flex items-center gap-2">
               <Zap className="size-3.5 text-primary" />
               <span className="font-mono">+250 XP</span>
             </div>
           </div>
-          <div className="absolute bottom-10 left-2 glass rounded-xl px-3 py-2 text-xs animate-float [animation-delay:-4s]">
+          <div className="absolute bottom-10 left-2 glass rounded-xl px-3 py-2 text-xs animate-float [animation-delay:-4s] z-10">
             <div className="text-muted-foreground">Battery</div>
             <div className="mt-1 h-1.5 w-24 rounded-full bg-muted overflow-hidden">
               <div className="h-full w-[82%] bg-gradient-to-r from-primary to-violet animate-pulse-glow" />
