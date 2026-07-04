@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 
 // FIX BUG-KRITIS-02: Server functions now accept userId/data as validated parameters
@@ -7,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 // Security is enforced by Supabase Row-Level Security on the database side.
 
 export const getWeeklyActivityLogs = createServerFn({ method: "GET" })
-  .validator((data: { userId: string }) => data)
+  .inputValidator(z.object({ userId: z.string() }))
   .handler(async ({ data: { userId } }) => {
     try {
       if (!userId) return [];
@@ -37,7 +38,7 @@ export const getWeeklyActivityLogs = createServerFn({ method: "GET" })
 // FIX BUG-PENTING-05 (partial): Use validator for type-safe input — prevents NaN from
 // undefined xpToAdd being written to the database.
 export const evaluateUserStreak = createServerFn({ method: "POST" })
-  .validator((data: { userId: string; xpToAdd: number }) => data)
+  .inputValidator(z.object({ userId: z.string(), xpToAdd: z.number() }))
   .handler(async ({ data: { userId, xpToAdd } }) => {
     if (!userId) throw new Error("userId is required");
 
@@ -97,7 +98,7 @@ export const evaluateUserStreak = createServerFn({ method: "POST" })
   });
 
 export const getUserStats = createServerFn({ method: "GET" })
-  .validator((data: { userId: string }) => data)
+  .inputValidator(z.object({ userId: z.string() }))
   .handler(async ({ data: { userId } }) => {
     if (!userId) return null;
 
