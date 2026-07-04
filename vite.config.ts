@@ -26,8 +26,8 @@ export default defineConfig({
       minify: "esbuild",
     },
     esbuild: {
-      // Secara otomatis menghapus semua console.log() dan debugger di environment production
-      drop: ["console", "debugger"],
+      drop: ["debugger"],
+      pure: ["console.log", "console.info", "console.debug", "console.trace"],
     },
   },
 });

@@ -53,11 +53,9 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <p className="mt-2 text-sm text-muted-foreground">
           Terjadi kesalahan. Coba muat ulang atau kembali ke beranda.
         </p>
-        {import.meta.env.DEV && (
-          <pre className="mt-4 rounded bg-muted p-3 text-left text-xs text-destructive overflow-auto max-h-40">
-            {error.message}
-          </pre>
-        )}
+        <pre className="mt-4 rounded bg-muted p-3 text-left text-xs text-destructive overflow-auto max-h-40">
+          {error.message}
+        </pre>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
