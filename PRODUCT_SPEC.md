@@ -3,7 +3,7 @@
 ## 1. Product Overview
 **Product Name:** Sinau.id (formerly Learn Tracker)
 **Product Type:** Learning Management System (LMS) SaaS
-**Tagline:** A premium, modern, and intuitive platform for students and learners to track progress, manage tasks, and stay focused.
+**Tagline:** A premium, modern, and intuitive platform for students and learners to track progress, manage tasks, and stay motivated with an interactive Cyber-Avatar.
 
 ### 1.1 Vision
 To provide a seamless, aesthetically pleasing, and highly functional learning workspace that empowers users to manage their academic life or self-learning journey with minimal friction. 
@@ -49,6 +49,13 @@ To provide a seamless, aesthetically pleasing, and highly functional learning wo
 - A dedicated module to assist users during active study sessions.
 - Potentially incorporates Pomodoro timers, task-specific focus tracking, and minimal distractions.
 
+
+### 3.6 Gamification & Cyber-Avatar
+- **Virtual Companion:** An interactive Cyber-Avatar that accompanies the user and reflects their learning journey.
+- **XP & Leveling:** Users earn Experience Points (XP) for completing tasks, logging activity, and using focus sessions.
+- **Daily Streaks:** Encourages consistency by tracking consecutive days of activity, with visual indicators for max streaks.
+- **Activity Logs:** Weekly tracking of user engagement and learning patterns to maintain motivation.
+
 ---
 
 ## 4. Technical Architecture
@@ -72,5 +79,5 @@ To provide a seamless, aesthetically pleasing, and highly functional learning wo
 - [x] Phase 2: Frontend routing setup (Dashboard, Jadwal, Tugas, Fokus).
 - [x] Phase 3: Supabase Authentication integration (Login, Signup, Onboarding).
 - [x] Phase 4: Production-ready Kanban board (Tugas) with `@dnd-kit` and optimistic updates.
-- [ ] Phase 5: Advanced reporting, analytics on learning progress, and gamification elements.
+- [x] Phase 5: Advanced reporting, activity logs, and gamification elements (XP, Streaks, Cyber-Avatar).
 - [ ] Phase 6: Mobile application or Progressive Web App (PWA) optimization.
